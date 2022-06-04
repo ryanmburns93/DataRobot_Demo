@@ -11,16 +11,22 @@ from flair.data import Sentence
 import string
 
 
-def calculate_vader_sentiment(messages_df):
+def calculate_vader_sentiment(messages_df, filtered=False):
     # calculate score from vaderSentiment
+    if filtered:
+        target_col = 'no_stopwords_message_text'
+        filtered_flag = '_filtered'
+    else:
+        target_col = 'censoredShortBody'
+        filtered_flag = ''
     analyzer = SentimentIntensityAnalyzer()
     scored_messages_df = pd.DataFrame()
     for index, sentence_transcript_entry in enumerate(messages_df):
-        vader_scores = analyzer.polarity_scores(sentence_transcript_entry['censoredShortBody'])
-        temp_df = pd.DataFrame({'compound_polarity_VS': vader_scores['compound'],
-                                'positive_ratio_VS': vader_scores['pos'],
-                                'negative_ratio_VS': vader_scores['neg'],
-                                'neutral_ratio_VS': vader_scores['neu']},
+        vader_scores = analyzer.polarity_scores(sentence_transcript_entry[target_col])
+        temp_df = pd.DataFrame({f'compound_polarity{filtered_flag}_VS': vader_scores['compound'],
+                                f'positive_ratio{filtered_flag}_VS': vader_scores['pos'],
+                                f'negative_ratio{filtered_flag}_VS': vader_scores['neg'],
+                                f'neutral_ratio{filtered_flag}_VS': vader_scores['neu']},
                                index=[0])
         temp_df = pd.concat([sentence_transcript_entry.to_frame().T, temp_df],
                             axis=1,
@@ -29,17 +35,23 @@ def calculate_vader_sentiment(messages_df):
     return scored_messages_df
 
 
-def calculate_textblob_sentiment(messages_df):
+def calculate_textblob_sentiment(messages_df, filtered=False):
     # calculate score from TextBlob - uses both the default PatternAnalyzer and the alternative NaiveBayesAnalyzer
-    tb_sentiment_PA_polarity = [TextBlob(i).sentiment.polarity for i in messages_df['censoredShortBody']]
-    tb_sentiment_PA_subj = [TextBlob(i).sentiment.subjectivity for i in messages_df['censoredShortBody']]
-    tb_sentiment_NBA = [TextBlob(message, analyzer=NaiveBayesAnalyzer()).sentiment for message in messages_df['censoredShortBody']]
+    if filtered:
+        target_col = 'no_stopwords_message_text'
+        filtered_flag = '_filtered'
+    else:
+        target_col = 'censoredShortBody'
+        filtered_flag = ''
+    tb_sentiment_PA_polarity = [TextBlob(message).sentiment.polarity for message in messages_df[target_col]]
+    tb_sentiment_PA_subj = [TextBlob(message).sentiment.subjectivity for message in messages_df[target_col]]
+    tb_sentiment_NBA = [TextBlob(message, analyzer=NaiveBayesAnalyzer()).sentiment for message in messages_df[target_col]]
     tb_sentiment_NBA_class = [sentiment['classification'] for sentiment in tb_sentiment_NBA]
     tb_sentiment_NBA_pos_ratio = [sentiment['p_pos'] for sentiment in tb_sentiment_NBA]
-    messages_df['sentiment_polarity_TB_PA'] = tb_sentiment_PA_polarity
-    messages_df['sentiment_subjectivity_TB_PA'] = tb_sentiment_PA_subj
-    messages_df['sentiment_classification_TB_NBA'] = tb_sentiment_NBA_class
-    messages_df['sentiment_pos_percent_TB_NBA'] = tb_sentiment_NBA_pos_ratio
+    messages_df[f'sentiment_polarity{filtered_flag}_TB_PA'] = tb_sentiment_PA_polarity
+    messages_df[f'sentiment_subjectivity{filtered_flag}_TB_PA'] = tb_sentiment_PA_subj
+    messages_df[f'sentiment_classification{filtered_flag}_TB_NBA'] = tb_sentiment_NBA_class
+    messages_df[f'sentiment_pos_percent_TB{filtered_flag}_NBA'] = tb_sentiment_NBA_pos_ratio
     return messages_df
 
 
@@ -56,10 +68,16 @@ def remove_stopwords_from_mesages(messages_df, filter_punctuation=True):
     return messages_df
 
 
-def calculate_flair_sentiment(messages_df):
+def calculate_flair_sentiment(messages_df, filtered=False):
     classifier = TextClassifier.load('en-sentiment')
     flair_sentiment_score_list = []
-    for message in messages_df['censoredShortBody']:
+    if filtered:
+        target_col = 'no_stopwords_message_text'
+        filtered_flag = '_filtered'
+    else:
+        target_col = 'censoredShortBody'
+        filtered_flag = ''
+    for message in messages_df[target_col]:
         message = Sentence(message)
         classifier.predict(message)
         value = message.labels[0].to_dict()['value']
@@ -69,6 +87,20 @@ def calculate_flair_sentiment(messages_df):
             result = -(message.to_dict()['labels'][0]['confidence'])
         result = round(result, 3)
         flair_sentiment_score_list.append(result)
-    messages_df['flair_sentiment_score'] = flair_sentiment_score_list
+    messages_df[f'flair_sentiment_score{filtered_flag}'] = flair_sentiment_score_list
     return messages_df
 
+
+def main(messages_df):
+    messages_df = calculate_vader_sentiment(messages_df)
+    messages_df = calculate_textblob_sentiment(messages_df)
+    messages_df = calculate_flair_sentiment(messages_df)
+    messages_df = remove_stopwords_from_mesages(messages_df, filter_punctuation=True)
+    messages_df = calculate_vader_sentiment(messages_df, filtered=True)
+    messages_df = calculate_textblob_sentiment(messages_df, filtered=True)
+    messages_df = calculate_flair_sentiment(messages_df, filtered=True)
+    return messages_df
+
+
+if __name__=='__main__':
+    main(messages_df)
