@@ -38,52 +38,12 @@ pip install -r requirements.txt
 ```
 
 4. Add your project details to your .env file. Required values are:
-
-* DATAROBOT_ENDPOINT=https://app2.datarobot.com/api/v2
-* DATAROBOT_API_TOKEN=
-* DR_TRAIN_DATASET_FILEPATH=
-* DR_TEST_DATASET_FILEPATH=
-
+```
+DATAROBOT_ENDPOINT=https://app2.datarobot.com/api/v2
+DATAROBOT_API_TOKEN=<your token here>
+DR_TRAIN_DATASET_FILEPATH=<your train dataset filepath here>
+DR_TEST_DATASET_FILEPATH=<your test dataset filepath here>
+```
 As shown above, the default endpoint root for the DataRobot AI Platform Trial and Self-Service users is https://app2.datarobot.com.
 
-5. Once the project is configured, the below demonstrates the output of each of the primary function calls incorporated into the main() function of datarobot_demo.py.
-
-    ### load_environment_and_client() ###
-    ```
-    def load_environment_and_client():
-    load_dotenv('.env')
-    dr.Client()
-    return
-    ```
-
-    Very simple, no output generated.
-
-    ### train_dataset, test_dataset = load_datasets() ###
-    ```
-    train_dataset_file_path = os.getenv('DR_TRAIN_DATASET_FILEPATH')
-    test_dataset_file_path = os.getenv('DR_TEST_DATASET_FILEPATH')
-
-    train_dataset = dr.Dataset.create_from_file(train_dataset_file_path)
-    test_dataset = dr.Dataset.create_from_file(test_dataset_file_path)
-    ```
-
-    Load the train and test datasets into file from the location specified in the .env file, and return the datasets in-memory. Note the alternative approach to load from a Pandas DataFrame included in the datarobot_demo.py file.
-    
-    ### project = create_project_and_target(train_dataset) ###
-    ```
-    project = dr.Project.create_from_dataset(train_dataset.id, project_name=f'Prospect_Sentiment')
-
-    project.set_target('signed_contract', worker_count=-1)
-    ```
-
-    Create a project from the training_dataset and set the target for DataRobot to begin EDA.
-
-    ### explore_training_dataset_features(train_dataset, histogram=True) ###
-    ```
-
-    ```
-    
-    ### model = train_model(project) ### 
-    get_top_of_leaderboard(project, verbose=True)
-    predictions = predict_against_model(project, model, test_dataset)
-
+5. Once the project is configured, the functions in datarobot_demo.py are written and called linearly with significant comments. Further details and a walkthrough demonstrating execution of the project are available [here]().
