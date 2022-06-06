@@ -34,12 +34,12 @@ def load_datasets():
     return train_dataset, test_dataset
 
 
-def create_project_and_target(training_dataset):
+def create_project_and_target(training_dataset, project_name, target_name):
     # Create a new project based on dataset
-    project = dr.Project.create_from_dataset(training_dataset.id, project_name=f'Prospect_Sentiment')
+    project = dr.Project.create_from_dataset(training_dataset.id, project_name=project_name)
 
     # Set target for dataset training
-    project.set_target('signed_contract', worker_count=-1)
+    project.set_target(target_name, worker_count=-1)
     return project
 
 
@@ -61,12 +61,12 @@ def train_model(project):
     model = dr.ModelRecommendation.get(project.id).get_model()
     # By default, models are evaluated on the first validation partition. 
     # To start cross-validation, use the Model.cross_validate method:
-    model_job_id = model.cross_validate()
-    cv_model = wait_for_async_model_creation(project_id=project.id, model_job_id=model_job_id)
+    # model_job_id = model.cross_validate()
+    # cv_model = wait_for_async_model_creation(project_id=project.id, model_job_id=model_job_id)
     # Check which features were actually used by the model - not all are guaranteed
-    feature_names = cv_model.get_features_used()
+    feature_names = model.get_features_used()
     print(feature_names)
-    return cv_model
+    return model
 
 
 def get_top_of_leaderboard(project, verbose = True):
@@ -74,8 +74,8 @@ def get_top_of_leaderboard(project, verbose = True):
     # A helper method to assemble a dataframe with Leaderboard results and print a summary:
     leaderboard = []
     for m in project.get_models():
-        leaderboard.append([m.blueprint_id, m.featurelist.id, m.id, m.model_type, m.sample_pct, m.metrics['AUC']['validation'], m.metrics['AUC']['crossValidation']])
-    leaderboard_df = pd.DataFrame(columns = ['bp_id', 'featurelist', 'model_id', 'model', 'pct', 'validation', 'cross_validation'], data = leaderboard)
+        leaderboard.append([m.blueprint_id, m.featurelist_id, m.id, m.model_type, m.sample_pct, m.metrics['MAE']['validation'], m.metrics['MAE']['holdout']])
+    leaderboard_df = pd.DataFrame(columns = ['bp_id', 'featurelist', 'model_id', 'model', 'pct', 'MAE validation', 'MAE holdout'], data = leaderboard)
 
     if verbose == True:
         # Print a Leaderboard summary:
@@ -86,7 +86,7 @@ def get_top_of_leaderboard(project, verbose = True):
 
         # Print the essential information for top models, sorted by accuracy from validation data:
         print("\n\nTop models in the leaderboard:")
-        leaderboard_top = leaderboard_df[leaderboard_df['pct'] == 64].sort_values(by = 'cross_validation', ascending = False).head().reset_index(drop = True)
+        leaderboard_top = leaderboard_df[leaderboard_df['pct'] == 64].sort_values(by = 'MAE holdout', ascending = False).head().reset_index(drop = True)
         display(leaderboard_top.drop(columns = ['bp_id', 'featurelist'], inplace = False))
 
         # Show blueprints of top models:
@@ -96,9 +96,9 @@ def get_top_of_leaderboard(project, verbose = True):
     return
 
 
-def predict_against_model(project, model, test_dataset):
+def predict_against_model(project, model):
     # Test predictions on new data
-    prediction_data = project.upload_dataset(test_dataset)
+    prediction_data = project.upload_dataset(os.getenv('DR_TEST_DATASET_FILEPATH'))
     predict_job = model.request_predictions(prediction_data.id)
     predictions = predict_job.get_result_when_complete()
     predictions.head()
