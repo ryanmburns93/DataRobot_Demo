@@ -1,5 +1,5 @@
 # AutoML with DataRobot Demo
-This project Explore MLOps and AI-powered application development with DataRobot.
+This project explores MLOps and AI-powered application development with DataRobot.
 
 ## Automated Machine Learning Overview ##
 Automated machine learning (AutoML) is "the process of automating the time-consuming, iterative tasks of machine learning model development," according to [Microsoft](https://docs.microsoft.com/en-us/azure/machine-learning/concept-automated-ml). AutoML technologies have matured significantly in the last five years and are becoming increasingly common-place in the mature data scientist's toolkit. Recent research by intelligence firm [ReportLinker.com](https://www.globenewswire.com/news-release/2022/05/19/2446648/0/en/Global-Automated-Machine-Learning-Market-Growth-Trends-COVID-19-Impact-and-Forecasts-2022-2027.html) describes the AutoML market as highly competitive and moderately fragmented, composed of several embedded market players joined by recent entrants seeking to capitalize on the advancement of data science technologies and capabilities which are organically raising the value and importance of AutoML tools to competitive business.
